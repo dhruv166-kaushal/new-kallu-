@@ -33,8 +33,8 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ transactions, produc
     <div className="p-6 h-full overflow-y-auto">
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Sales & Orders</h2>
-          <p className="text-slate-500 text-sm">Overview of business performance and history.</p>
+          <h2 className="text-2xl font-bold text-slate-800">Sales & Order List</h2>
+          <p className="text-slate-500 text-sm">Track your overall sales and see the full order list.</p>
         </div>
         {onResetHistory && transactions.length > 0 && (
           <button 
@@ -87,17 +87,17 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ transactions, produc
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Order List / Most Sold */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ring-4 ring-slate-50">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
-            <List size={18} className="text-slate-500" />
-            <h3 className="font-semibold text-slate-800">Overall Items Sold (Order List)</h3>
+            <List size={18} className="text-emerald-600" />
+            <h3 className="font-bold text-slate-800">Order List (Overall Items Sold)</h3>
           </div>
           <div className="p-0 overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold">
                 <tr>
                   <th className="p-4">Item Name</th>
-                  <th className="p-4 text-right">Total Sold Qty</th>
+                  <th className="p-4 text-right">Total Quantity Sold</th>
                   <th className="p-4 text-right">Status</th>
                 </tr>
               </thead>
@@ -112,7 +112,7 @@ export const SalesSummary: React.FC<SalesSummaryProps> = ({ transactions, produc
                       <td className="p-4 font-medium text-slate-700">{item.name}</td>
                       <td className="p-4 text-right font-bold text-emerald-600">{item.count}</td>
                       <td className="p-4 text-right">
-                        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Active</span>
+                        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">Sold</span>
                       </td>
                     </tr>
                   ))

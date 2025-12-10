@@ -2,8 +2,20 @@ import { GoogleGenAI } from "@google/genai";
 import { Product, Transaction } from "../types";
 
 const getAiClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) throw new Error("API Key not found");
+  // Safe check for process.env to prevent "blank page" crashes in browser previews
+  let apiKey = '';
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      apiKey = process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Environment variable access failed");
+  }
+  
+  if (!apiKey) {
+    // Fallback or warning if key is missing
+    console.warn("API Key not found. AI features will not work.");
+  }
   return new GoogleGenAI({ apiKey });
 };
 
@@ -46,7 +58,7 @@ export const geminiService = {
         contents: prompt,
       });
 
-      return response.text;
+      return response.text || "No analysis generated.";
     } catch (error) {
       console.error("Gemini Analysis Failed", error);
       return "Unable to generate insights at this time. Please ensure your API key is configured correctly.";
