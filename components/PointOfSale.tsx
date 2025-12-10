@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Product, CartItem, Transaction } from '../types';
-import { ShoppingCart, Plus, Minus, Trash, Search, CreditCard, MapPin, Stethoscope, AlertCircle, Percent, DollarSign } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash, Search, CreditCard, MapPin, Stethoscope, AlertCircle, Percent, DollarSign, X } from 'lucide-react';
 import { BillGenerator } from './BillGenerator';
 
 interface POSProps {
@@ -13,6 +13,7 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showBill, setShowBill] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   
   // Checkout States
   const [discountType, setDiscountType] = useState<'amount' | 'percent'>('amount');
@@ -95,6 +96,7 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
     setDiscountValue(0);
     setRemark('');
     setRemarkError(false);
+    setIsMobileCartOpen(false); // Close mobile cart after checkout
   };
 
   const filteredProducts = products.filter(p => 
@@ -104,34 +106,36 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
 
   return (
     <>
-      <div className="flex h-full overflow-hidden">
-        {/* Product Grid */}
-        <div className="flex-1 flex flex-col p-6 bg-slate-50 overflow-hidden">
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">New Sale</h2>
-              <p className="text-slate-500 text-sm">Find items by name or medical usage.</p>
-            </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search name, issue (e.g. fever)..." 
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full outline-none focus:border-emerald-500 shadow-sm"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
+      <div className="flex h-full flex-col lg:flex-row overflow-hidden relative">
+        {/* Product Grid Area */}
+        <div className="flex-1 flex flex-col bg-slate-50 h-full overflow-hidden">
+          <div className="p-4 lg:p-6 pb-2">
+            <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">New Sale</h2>
+                <p className="text-slate-500 text-sm">Find items by name or medical usage.</p>
+              </div>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search name, issue (e.g. fever)..." 
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-full outline-none focus:border-emerald-500 shadow-sm"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2">
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="flex-1 overflow-y-auto px-4 lg:px-6 pb-24 lg:pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 lg:gap-4">
               {filteredProducts.map(product => (
                 <button
                   key={product.id}
                   onClick={() => addToCart(product)}
                   disabled={product.stock === 0}
-                  className={`flex flex-col p-4 rounded-xl border transition-all text-left group ${
+                  className={`flex flex-col p-4 rounded-xl border transition-all text-left group relative ${
                     product.stock === 0 
                       ? 'bg-red-50 border-red-200 opacity-70 cursor-not-allowed' 
                       : 'bg-white border-slate-200 hover:border-emerald-400 hover:shadow-md'
@@ -151,7 +155,7 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
                     <span className="font-bold text-emerald-600">₹{product.price.toFixed(2)}</span>
                   </div>
                   
-                  <h3 className="font-semibold text-slate-800 mb-1 leading-tight">{product.name}</h3>
+                  <h3 className="font-semibold text-slate-800 mb-1 leading-tight pr-4">{product.name}</h3>
                   
                   {/* Additional Details for Vendor */}
                   <div className="space-y-1 mt-2 mb-3">
@@ -174,7 +178,7 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
                         {product.stock} left
                     </div>
                     {product.stock > 0 && (
-                      <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                           <Plus size={14} />
                       </div>
                     )}
@@ -182,12 +186,46 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
                 </button>
               ))}
             </div>
+            {filteredProducts.length === 0 && (
+                <div className="text-center text-slate-400 py-10">
+                    <p>No medicines found.</p>
+                </div>
+            )}
           </div>
         </div>
 
-        {/* Cart Sidebar */}
-        <div className="w-96 bg-white border-l border-slate-200 flex flex-col shadow-xl z-10">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        {/* Mobile Bottom Cart Bar (Visible only on small screens) */}
+        <div className="lg:hidden absolute bottom-0 left-0 right-0 p-3 bg-white border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20 flex justify-between items-center">
+          <div className="flex flex-col">
+            <span className="text-xs text-slate-500 font-medium">{cart.reduce((acc, item) => acc + item.quantity, 0)} Items</span>
+            <span className="text-lg font-bold text-emerald-600">₹{finalTotal.toFixed(2)}</span>
+          </div>
+          <button 
+             onClick={() => setIsMobileCartOpen(true)}
+             className="bg-emerald-600 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 shadow-lg shadow-emerald-200 active:scale-95 transition-transform"
+          >
+             <ShoppingCart size={18} /> View Cart
+          </button>
+        </div>
+
+        {/* Cart Sidebar (Responsive: Modal on mobile, Sidebar on Desktop) */}
+        <div className={`
+            flex flex-col bg-white shadow-xl z-30 transition-transform duration-300
+            fixed inset-0 lg:static lg:w-96 lg:border-l lg:border-slate-200 lg:h-full lg:translate-y-0
+            ${isMobileCartOpen ? 'translate-y-0' : 'translate-y-full'}
+        `}>
+          {/* Mobile Header */}
+          <div className="lg:hidden p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+             <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+               <ShoppingCart size={20} className="text-emerald-600" /> Current Order
+             </h3>
+             <button onClick={() => setIsMobileCartOpen(false)} className="p-2 bg-white rounded-full shadow-sm text-slate-500 hover:text-red-500">
+                <X size={20} />
+             </button>
+          </div>
+
+          {/* Desktop Header */}
+          <div className="hidden lg:flex p-6 border-b border-slate-100 bg-slate-50/50">
             <h3 className="font-bold text-lg flex items-center gap-2 text-slate-800">
               <ShoppingCart size={20} className="text-emerald-600" />
               Current Order
@@ -201,6 +239,12 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
                   <ShoppingCart size={24} className="opacity-50" />
                 </div>
                 <p className="text-sm">Cart is empty</p>
+                <button 
+                   onClick={() => setIsMobileCartOpen(false)}
+                   className="lg:hidden text-emerald-600 text-sm font-medium hover:underline"
+                >
+                    Go back to add items
+                </button>
               </div>
             ) : (
               cart.map(item => (
@@ -216,7 +260,6 @@ export const PointOfSale: React.FC<POSProps> = ({ products, onCheckout }) => {
                     >
                       <Minus size={12} />
                     </button>
-                    {/* CHANGED: Text color set to black */}
                     <span className="text-sm font-bold w-4 text-center text-black">{item.quantity}</span>
                     <button 
                       onClick={() => updateQuantity(item.id, 1)}
