@@ -4,17 +4,16 @@ import { supabase } from './supabaseClient';
 export const dataService = {
   // --- Vendor Management ---
   
-  // Register a new vendor ID in the 'vendors' table
-  registerVendor: async (vendorId: string): Promise<{ success: boolean; errorType?: 'EXISTS' | 'DB_ERROR' | null; errorMessage?: string }> => {
+  // Register a new vendor ID with a password
+  registerVendor: async (vendorId: string, password: string): Promise<{ success: boolean; errorType?: 'EXISTS' | 'DB_ERROR' | null; errorMessage?: string }> => {
     try {
-      // Check if exists first using maybeSingle (avoids error on 0 results)
+      // Check if exists first
       const { data: existing, error: fetchError } = await supabase
         .from('vendors')
         .select('id')
         .eq('id', vendorId)
         .maybeSingle();
 
-      // If table doesn't exist, fetchError will be present
       if (fetchError) {
          console.error("Supabase Check Error:", JSON.stringify(fetchError, null, 2));
          return { success: false, errorType: 'DB_ERROR', errorMessage: fetchError.message };
@@ -26,15 +25,14 @@ export const dataService = {
 
       const { error } = await supabase
         .from('vendors')
-        .insert([{ id: vendorId }]);
+        .insert([{ id: vendorId, password: password }]);
       
       if (error) {
-        // Log full error object for debugging
         console.error("Supabase Registration Error Details:", JSON.stringify(error, null, 2));
         return { 
           success: false, 
           errorType: 'DB_ERROR', 
-          errorMessage: error.message || error.details || "Unknown Supabase Error" 
+          errorMessage: error.message || "Unknown Supabase Error" 
         };
       }
       
@@ -45,19 +43,37 @@ export const dataService = {
     }
   },
 
-  // Check if a vendor exists for Login
-  vendorExists: async (vendorId: string): Promise<boolean> => {
+  // Login with password check
+  loginVendor: async (vendorId: string, passwordInput: string): Promise<{ success: boolean; error?: string }> => {
     const { data, error } = await supabase
       .from('vendors')
-      .select('id')
+      .select('id, password')
       .eq('id', vendorId)
       .maybeSingle();
     
     if (error) {
         console.error("Login Check Error:", JSON.stringify(error, null, 2));
+        return { success: false, error: 'Database Connection Error' };
+    }
+
+    if (!data) {
+        return { success: false, error: 'Store Name not found. Please Register.' };
+    }
+
+    // Password Check
+    // If database has no password column yet (old schema), data.password might be undefined.
+    // We treat strict equality.
+    if (data.password && data.password !== passwordInput) {
+        return { success: false, error: 'Incorrect Password' };
+    }
+
+    // Fallback: If user created account before passwords were added, let them in (or force reset in future)
+    if (!data.password && passwordInput.length > 0) {
+        // Optional: Auto-update password for legacy users on first login? 
+        // For now, we just allow access to not lock them out.
     }
     
-    return !!data && !error;
+    return { success: true };
   },
 
   // --- Products ---
@@ -73,7 +89,6 @@ export const dataService = {
       return [];
     }
 
-    // Map snake_case DB columns to camelCase Product type
     return data.map((item: any) => ({
       id: item.id,
       name: item.name,
@@ -99,8 +114,6 @@ export const dataService = {
     };
 
     const payload: any = { ...dbProduct };
-    // If ID is a valid UUID (length > 20 as a safe check), include it. 
-    // Otherwise omit to let DB generate a new UUID.
     if (product.id && product.id.length > 20) { 
        payload.id = product.id; 
     }
@@ -225,7 +238,6 @@ export const dataService = {
     
     if (error) {
         console.error("Reset Transactions Error:", JSON.stringify(error, null, 2));
-        // Return existing transactions if delete failed, so UI doesn't fake-clear it
         const current = await dataService.getTransactions(vendorId);
         return { success: false, transactions: current, error: error.message };
     }

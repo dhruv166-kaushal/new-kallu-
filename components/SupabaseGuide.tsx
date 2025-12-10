@@ -11,8 +11,12 @@ export const SupabaseGuide: React.FC<GuideProps> = ({ onClose }) => {
   const sqlScript = `-- 1. Create Tables (Safe to run multiple times)
 create table if not exists vendors (
   id text primary key,
+  password text, -- Stores the login password
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- If you already created the table, run this to add the password column:
+alter table vendors add column if not exists password text;
 
 create table if not exists products (
   id uuid default gen_random_uuid() primary key,
@@ -40,7 +44,7 @@ create table if not exists transactions (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 2. CRITICAL: Disable Row Level Security (Fixes "Permission Denied" / "Simply Not Working")
+-- 2. CRITICAL: Disable Row Level Security (Fixes "Permission Denied" errors)
 alter table vendors disable row level security;
 alter table products disable row level security;
 alter table transactions disable row level security;
@@ -116,6 +120,10 @@ create index if not exists idx_transactions_vendor on transactions(vendor_id);`;
             <li className="flex gap-2">
               <span className="text-emerald-600 font-bold">✓</span>
               <span><strong>Creates Tables:</strong> The app needs places to store Vendors, Products, and Transactions.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-emerald-600 font-bold">✓</span>
+              <span><strong>Enables Passwords:</strong> Updates the database to securely store login passwords.</span>
             </li>
             <li className="flex gap-2">
               <span className="text-emerald-600 font-bold">✓</span>

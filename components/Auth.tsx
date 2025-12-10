@@ -10,6 +10,7 @@ interface AuthProps {
 export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [vendorName, setVendorName] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -22,6 +23,11 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       setError("Please enter a store name.");
       return;
     }
+    
+    if (password.length < 4) {
+      setError("Password must be at least 4 characters.");
+      return;
+    }
 
     setIsLoading(true);
     // Normalize vendor ID to be lowercase/trimmed for storage keys
@@ -30,7 +36,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     try {
       if (isRegistering) {
         // Registration Logic
-        const result = await dataService.registerVendor(vendorId);
+        const result = await dataService.registerVendor(vendorId, password);
         if (result.success) {
           onLogin(vendorId);
         } else if (result.errorType === 'EXISTS') {
@@ -49,11 +55,11 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         }
       } else {
         // Login Logic
-        const exists = await dataService.vendorExists(vendorId);
-        if (exists) {
+        const result = await dataService.loginVendor(vendorId, password);
+        if (result.success) {
           onLogin(vendorId);
         } else {
-          setError("Store not found. Please Register first.");
+          setError(result.error || "Login Failed");
         }
       }
     } catch (e: any) {
@@ -86,8 +92,8 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </h2>
             <p className="text-slate-500 text-sm mt-1">
               {isRegistering 
-                ? 'Create a unique ID for your shop to start tracking.' 
-                : 'Enter your vendor name to access your data.'}
+                ? 'Create a unique ID and password for your shop.' 
+                : 'Enter your credentials to access your data.'}
             </p>
           </div>
 
@@ -121,14 +127,14 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="password"
+                  required
                   placeholder="••••••••"
                   className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                 />
               </div>
-              <p className="text-xs text-slate-400 mt-1 text-right">
-                (Simulated for demo)
-              </p>
             </div>
 
             {error && (
@@ -160,7 +166,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             className="w-full mt-3 py-3 border-2 border-slate-100 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition flex items-center justify-center gap-2 text-sm"
           >
             <Database size={16} className="text-emerald-600" />
-            Database Setup Guide (Fix Errors)
+            Database Setup Guide (Required for Password)
           </button>
 
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
@@ -169,6 +175,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 setIsRegistering(!isRegistering);
                 setError(null);
                 setVendorName('');
+                setPassword('');
               }}
               disabled={isLoading}
               className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline flex items-center justify-center gap-2 w-full"
